@@ -1,6 +1,6 @@
 id=PUIAOSPPackageInstall
 name=PUI 安装器
-version=3.7.52
-versionCode=89000001
+version=3.7.59
+versionCode=96000002
 author=天伞桜&PanL
-description=替换系统安装器 ｜ ColorOS 15~17 / LineageOS 22.0~24.0 / 原生 Android 15+ ｜ 内嵌 PUI 安装器 3.7.52
+description=替换系统安装器 ｜ ColorOS 15~17 / LineageOS 22.0~24.0 / 原生 Android 15+ ｜ 内嵌 PUI 安装器 3.7.59
