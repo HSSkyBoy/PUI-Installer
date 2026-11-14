@@ -55,7 +55,11 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             // 构建产物随后用 AOSP testkey 重新签名（见 tools/sign.sh）
             signingConfig = signingConfigs.getByName("debug")
         }
