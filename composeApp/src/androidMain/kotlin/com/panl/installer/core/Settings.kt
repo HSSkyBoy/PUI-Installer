@@ -117,7 +117,7 @@ class Settings private constructor(private val sp: SharedPreferences) {
      *
      * 默认开 —— 用户点开一个模块 zip 就是想刷它，不用再去设置里开一遍。
      */
-    var moduleFlashEnabled: Boolean by bool("module_flash_enabled", true)
+    var moduleFlashEnabled: Boolean by bool("module_flash_enabled", false)
 
     /**
      * 启用来源预设：只有列表里的应用才能发起安装。
