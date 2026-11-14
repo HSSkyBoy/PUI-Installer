@@ -36,7 +36,6 @@ enum class AppLanguage(
     Russian("ru", "Русский", true),
     Ukrainian("uk", "Українська", true),
     Polish("pl", "Polski", true),
-    Latin("la", "Latina", true),
     Dutch("nl", "Nederlands", true),
     Danish("da", "Dansk", true),
     Norwegian("nb", "Norsk", true),
@@ -96,7 +95,6 @@ object I18n {
                 systemTag.startsWith("ru", true) -> AppLanguage.Russian
                 systemTag.startsWith("uk", true) -> AppLanguage.Ukrainian
                 systemTag.startsWith("pl", true) -> AppLanguage.Polish
-                systemTag.startsWith("la", true) -> AppLanguage.Latin
                 systemTag.startsWith("nl", true) -> AppLanguage.Dutch
                 systemTag.startsWith("da", true) -> AppLanguage.Danish
                 systemTag.startsWith("nb", true) || systemTag.startsWith("no", true) || systemTag.startsWith("nn", true) -> AppLanguage.Norwegian
@@ -163,7 +161,6 @@ fun tr(zh: String, en: String): String = when (I18n.effective) {
     AppLanguage.Russian -> russianOverrides[zh] ?: en
     AppLanguage.Ukrainian -> ukrainianOverrides[zh] ?: en
     AppLanguage.Polish -> polishOverrides[zh] ?: en
-    AppLanguage.Latin -> latinOverrides[zh] ?: en
     AppLanguage.Dutch -> dutchOverrides[zh] ?: en
     AppLanguage.Danish -> danishOverrides[zh] ?: en
     AppLanguage.Norwegian -> norwegianOverrides[zh] ?: en
