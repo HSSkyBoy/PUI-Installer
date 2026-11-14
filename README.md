@@ -1,63 +1,89 @@
-# PUI Installer
+# Installer-PUI
 
-我懒，所以README.md是大肥鱼写的。
+用 **PUI 设计系统**重写的 Android 原生系统安装器，替换 ColorOS 15~17 / LineageOS 22~24 / 原生 Android 15+ 上的
+`com.android.packageinstaller`（AOSP PackageInstaller）。
 
-用 **PUI 设计系统**重写的系统安装器，替换 ColorOS 17 / Android 17 上的
-`com.android.packageinstaller`（AOSP PackageInstaller 17.7.4）。
-
-界面全部是 Compose + PUI 组件（灰底白卡、非凡洋红、20dp 圆角、悬浮胶囊导航栏），
-安装能力走 `PackageInstaller` 会话，系统安装器身份带来静默安装 / 静默卸载。
+界面全部采用 Jetpack Compose + PUI 组件（灰底白卡、非凡洋红、20dp 圆角、悬浮胶囊导航栏），
+安装能力基于 `PackageInstaller` 会话，具备系统安装器身份特权（静默安装 / 静默卸载）。
 
 ```
 PUIInstaller/
-├── composeApp/src/commonMain/kotlin/com/panl/pui/    ← PUI 库（从 PUIDemo 1.0.92 原样搬入）
+├── composeApp/src/commonMain/kotlin/com/panl/pui/    ← PUI 视觉组件库
 ├── composeApp/src/androidMain/
 │   ├── kotlin/com/panl/installer/
 │   │   ├── core/          APK 解析、签名识别、安装引擎、设置、通知
-│   │   └── ui/            首页 / 安装页 / 卸载页 / 设置 / 签名检测 / 应用商店能力
+│   │   ├── i18n/          多语言支持（中文简/繁/粤、英、日、法、韩、德、俄等）
+│   │   └── ui/            首页 / 安装页 / 卸载页 / 进阶设置 / 权限与能力检测
 │   └── res/               自适应图标（含 -night 深色渐变底）、主题
-└── tools/build.sh         构建 → zipalign → AOSP testkey 签名
+├── magisk/                Magisk / KernelSU / APatch 刷写模块源码
+└── tools/                 构建与模块打包脚本
 ```
 
 ---
 
-## 一、为什么包名是 `com.android.packageinstaller`
+## 一、核心特性与最新改动（v3.7.59）
 
-设备上的系统安装器位于 `/system_ext/priv-app/PackageInstaller/`，签名是 **AOSP testkey**
-（`CN=Android, O=Android`，SHA-256 `a40da80a…`）。这份 APK 用同一把公开测试密钥签名，
-因此可以：
-
-- 以「系统应用更新」的身份覆盖安装（`UPDATED_SYSTEM_APP`），保留 `PRIVILEGED` 标志；
-- 继续持有 `INSTALL_PACKAGES` / `DELETE_PACKAGES`，实现**静默安装、静默卸载**；
-- 通过 KernelSU 模块直接替换 `/system_ext/priv-app/PackageInstaller/PackageInstaller.apk`。
-
-> 换 ROM / 换签名后需要重新确认：`apksigner verify --print-certs` 对比系统 APK 的证书。
-> 签名不一致时只能用模块覆盖（且要清掉旧包数据），不能 `adb install -r`。
+- **统一应用名称**：应用名称全语系统一定名为 **`Installer-PUI`**。
+- **純粹安裝體驗**：
+  - 完整移除 Xposed / 核心破解（CorePatch）相關代碼與依賴，回歸標準 Android 安裝器職責。
+  - 移除首頁冗餘的簽名檢測入口，精簡安裝包選取為單選模式。
+  - 移除進階設定中的模組刷寫（Module Flashing）功能與代碼。
+  - 將「註冊應用商店」重構為簡潔的 **「權限與能力檢測」**（移除多餘的 RAS 註冊流程與年費說明）。
+- **多語言精靈**：清理冷門拉丁文等，保留並補全常用語系（中文簡/繁/粵、English、日本語、한국어、조선어 朝鮮語、Français 等）。
+- **16 KB 頁面對齊支援**：產物 APK 默認經過 `zipalign -P 16` 對齊，全面相容 Android 15+ 及最新旗艦處理器 16 KB Page Size。
 
 ---
 
-## 二、五个需求怎么落地的
+## 二、功能說明
 
-### 1. 桌面图标 + 功能面板
+### 1. 桌面圖標與撥號快捷喚起
+- 預設提供完整的桌面圖標。
+- 支援進階設定中「隱藏桌面圖標」，隱藏後可隨時在電話撥號盤輸入 **`*#*#078#*#*`** 快速喚起安裝器。
 
-- 自适应图标：`res/mipmap-anydpi-v26/ic_launcher.xml`
-  - 图形：官方 `Directbox_Receive.svg` 原样搬入（24×24 视图，group 放大 3.2 倍居中），
-    四个 path 全部改成白色；托盘与槽口保留原图 40% 的透明度，叠出来仍有层次
-  - 亮色底：洋红斜向渐变（`drawable/ic_launcher_background.xml`）
-  - **暗色底：深色渐变 + 左上柔光**（`drawable-night/ic_launcher_background.xml`），
-    前景同样是白色，深底上对比度反而更强，因此不再单独做夜间前景
-  - 单色层：Android 13+ 主题图标（只保留箭头 + 盒身剪影）
-- 首页（`ui/main/HomeScreen.kt`）：Hero 状态卡 + 两个快捷入口 + 功能清单。
-  新增功能只要往 `features` 列表里加一条，样式与点击行为统一。
+### 2. 版本號對比（當前 → 更新後）
+- 安裝時直觀對比已安裝版本與目標安裝包的版本號及簽名資訊。
 
-### 2. 版本号对比（当前 → 更新后）
+### 3. 即時活動與浮窗/後台安裝
+- 支援 Android 16+ Live Updates 及 ColorOS 16/17 流體雲通知。
+- 支援後台靜默安裝、自動刪除安裝包、生物識別確認等實用設定。
 
-`ui/components/Widgets.kt` 的 `VersionCompareCard`：
+---
 
+## 三、為什麼包名是 `com.android.packageinstaller`
+
+設備上的系統安裝器位於 `/system_ext/priv-app/PackageInstaller/`，簽名是 **AOSP testkey**。
+本專案包名與系統一致，因此可以：
+- 以「系統應用更新」身份覆蓋安裝（`UPDATED_SYSTEM_APP`），保留 `PRIVILEGED` 特權標誌；
+- 持有 `INSTALL_PACKAGES` / `DELETE_PACKAGES` 實現**免彈窗靜默安裝與靜默卸載**；
+- 透過 Magisk / KernelSU / APatch 模組直接替換 `/system_ext/priv-app/PackageInstaller/PackageInstaller.apk`。
+
+---
+
+## 四、構建與模組打包
+
+```bash
+# 1. 編譯 Release APK
+./gradlew :composeApp:assembleRelease
+
+# 2. 生成對齊與簽名 APK
+# 產物：out/Installer-PUI-<versionName>-<versionCode>.apk
+
+# 3. 打包 Magisk / KernelSU 模組
+python tools/build-module.py
+# 產物：out/PUIInstaller-<versionName>-magisk.zip
 ```
-当前 1.0.91 (92)   →   新版本 1.0.92 (93)
-从 1.0.91 更新到 1.0.92，版本号 92 → 93
+
+---
+
+## 五、部署到設備
+
+**方式 A：覆蓋安裝**
+```bash
+adb install -r out/Installer-PUI-3.7.59-96000002.apk
 ```
+
+**方式 B：Magisk / KernelSU / APatch 模組**
+直接在面具或 KSU 管理器中刷入 `PUIInstaller-3.7.59-magisk.zip`，重啟後由掛載直接接管系統安裝器。
 
 - 数据来自 `ApkInspector`：`getPackageArchiveInfo` 读 APK 的 versionName/versionCode，
   再与 `getPackageInfo` 的已安装版本比对，得到 `NEW / UPDATE / DOWNGRADE / REINSTALL` 四种关系；
