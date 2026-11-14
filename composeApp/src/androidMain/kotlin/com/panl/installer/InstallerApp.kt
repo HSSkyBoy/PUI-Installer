@@ -11,22 +11,12 @@ import com.panl.installer.core.MemoryPressure
 import com.panl.installer.core.Notifications
 import com.panl.installer.core.Settings
 import com.panl.installer.i18n.AppLanguage
-import com.panl.installer.corepatch.CorePatchPrefs
 import com.panl.installer.i18n.I18n
-import io.github.libxposed.service.XposedService
-import io.github.libxposed.service.XposedServiceHelper
 
 class InstallerApp : Application() {
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        // 早点连 LSPosed：连上才拿得到远程配置（核心破解的开关都存在那边）
-        runCatching {
-            XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener {
-                override fun onServiceBind(service: XposedService) = CorePatchPrefs.bind(service, this@InstallerApp)
-                override fun onServiceDied(service: XposedService) = CorePatchPrefs.unbind()
-            })
-        }
     }
 
     override fun onCreate() {

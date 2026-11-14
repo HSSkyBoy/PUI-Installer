@@ -23,7 +23,6 @@ import com.panl.installer.core.LiveInstallService
 import com.panl.installer.core.InstallerLog
 import com.panl.installer.core.Notifications
 import com.panl.installer.core.Settings
-import com.panl.installer.corepatch.CorePatchPrefs
 import com.panl.installer.core.SessionInstaller
 import com.panl.installer.core.SourceCleaner
 import com.panl.installer.core.VersionRelation
@@ -502,13 +501,9 @@ class InstallController(
             return
         }
 
-        // 这条签名预检是**客户端**做的，和系统里的 hook 无关。
-        // 核心破解已经接入系统框架时，校验就交给系统决定：模块里的开关状态
-        // 有可能还没同步过来（远程 prefs 是异步的），在这里拦一道就会变成
-        // 「开关全开却装不上」——用户报的就是这个。
+        // 这条签名预检是**客户端**做的
         if (info.relation == VersionRelation.UPDATE &&
-            info.signatureMatchesInstalled == false &&
-            !CorePatchPrefs.activeInSystem
+            info.signatureMatchesInstalled == false
         ) {
             state = InstallUiState.Failed(
                 info,
@@ -591,16 +586,6 @@ class InstallController(
 
             var outcome = withTimeoutOrNull(180_000) {
                 snapshotFlow { InstallEngine.Bus.outcome }.filterNotNull().first()
-            }
-            // 系统以「版本低于已安装版本」拒绝时，核心破解的 hook 可能被别的模块顶掉，
-            // 用 root 直接 pm install -r -d 兜底（INSTALL_ALLOW_DOWNGRADE 最可靠）
-            if (outcome != null && !outcome.success && outcome.downgradeBlocked &&
-                CorePatchPrefs.activeInSystem
-            ) {
-                val rootOutcome = withContext(Dispatchers.IO) {
-                    InstallEngine.installAsRoot(activity, info.file)
-                }
-                if (rootOutcome.success) outcome = outcome.copy(success = true, message = "Success")
             }
             if (outcome == null) {
                 val message = tr("安装超时，系统没有返回结果", "Install timed out — the system returned no result")
@@ -1079,11 +1064,6 @@ class InstallController(
         }
         var outcome = withTimeoutOrNull(180_000) {
             snapshotFlow { InstallEngine.Bus.outcome }.filterNotNull().first()
-        }
-        // 版本更低被系统拒时，核心破解的 hook 可能被别的模块顶掉，用 root 兜底
-        if (outcome != null && !outcome.success && outcome.downgradeBlocked && CorePatchPrefs.activeInSystem) {
-            val rootOutcome = withContext(Dispatchers.IO) { InstallEngine.installAsRoot(activity, info.file) }
-            if (rootOutcome.success) outcome = outcome.copy(success = true, message = "Success")
         }
         val result = outcome ?: return false to tr("安装超时", "Install timed out")
         InstallerLog.record(

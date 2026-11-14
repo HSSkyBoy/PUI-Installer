@@ -24,9 +24,6 @@ kotlin {
             implementation("androidx.activity:activity-compose:1.9.3")
             implementation("androidx.core:core-ktx:1.13.1")
             implementation("androidx.core:core-splashscreen:1.0.1")
-            // 核心破解：Xposed 模块能力（api 只在编译期用，运行时由 LSPosed 注入）
-            compileOnly("io.github.libxposed:api:101.0.0")
-            implementation("io.github.libxposed:service:101.0.0")
             implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
         }

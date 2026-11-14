@@ -163,22 +163,6 @@ private fun AdvancedScreen(activity: ComponentActivity) {
                 }
             }
 
-            item {
-                Spacer(Modifier.height(18.dp))
-                PuiGroup(title = null) {
-                    PuiListRow(
-                        icon = null,
-                        iconPainter = painterResource(R.drawable.ic_security_safe),
-                        title = tr("核心破解", "Core patch"),
-                        subtitle = tr("需要 LSPosed", "Requires LSPosed"),
-                        showDivider = false,
-                        showChevron = true,
-                        onClick = {
-                            context.startActivity(Intent(context, CorePatchActivity::class.java))
-                        }
-                    )
-                }
-            }
 
             item {
                 Spacer(Modifier.height(18.dp))

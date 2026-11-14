@@ -409,11 +409,6 @@
             android:exported="false"
             android:theme="@style/Theme.PuiInstaller.Transparent" />
 
-        <activity
-            android:name=".ui.CorePatchActivity"
-            android:exported="false"
-            android:theme="@style/Theme.PuiInstaller.Transparent" />
-
         <receiver
             android:name=".core.InstallResultReceiver"
             android:exported="false" />

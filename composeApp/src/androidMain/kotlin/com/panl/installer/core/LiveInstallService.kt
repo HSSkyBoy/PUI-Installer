@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
-import com.panl.installer.corepatch.CorePatchPrefs
 import com.panl.installer.i18n.tr
 
 /**
@@ -161,12 +160,7 @@ class LiveInstallService : Service() {
             fail(label, tr("安装超时，系统没有返回结果", "Install timed out — the system returned no result"))
             return false
         }
-        var result = outcome
-        // 降级被系统拒：核心破解 hook 可能被别的模块顶掉，用 root 兜底
-        if (!result.success && result.downgradeBlocked && CorePatchPrefs.activeInSystem) {
-            val rootOutcome = withContext(Dispatchers.IO) { InstallEngine.installAsRoot(this@LiveInstallService, file) }
-            if (rootOutcome.success) result = result.copy(success = true, message = "Success")
-        }
+        val result = outcome
         if (!result.success) {
             fail(label, result.message)
             return false
