@@ -130,22 +130,6 @@ class InstallActivity : ComponentActivity() {
                     downloaded
                 }
                 val file = withContext(Dispatchers.IO) { ApkStaging.stage(this@InstallActivity, localUri) }
-                // 模块 zip（里面是 module.prop 不是 APK）：实时通知模式没有界面，刷模块又必须人工确认，
-                // 所以改成用浮窗重新打开自己，直接进刷入页
-                if (file != null && Settings.get(this@InstallActivity).moduleFlashEnabled) {
-                    val module = withContext(Dispatchers.IO) {
-                        com.panl.installer.core.ModuleInspector.inspect(file)
-                    }
-                    if (module != null) {
-                        // 刷模块必须有人点确认，但这个 Activity 正在退场，自己再拉一个浮窗
-                        // 会被 ColorOS 丢掉（launch 被判定 delivered-to-top 后整条丢弃），
-                        // 所以留一条「点此刷入」的通知，点开就是浮窗刷入页
-                        Notifications.cancelProgress(this@InstallActivity)
-                        Notifications.showModuleReady(this@InstallActivity, module.name, file)
-                        runCatching { finish() }
-                        return@launch
-                    }
-                }
                 val info = file?.let { withContext(Dispatchers.IO) { ApkInspector.inspect(this@InstallActivity, it) } }
                 if (info == null) {
                     Notifications.cancelProgress(this@InstallActivity)

@@ -248,13 +248,8 @@ private fun BatchRow(item: BatchItem, index: Int, compact: Boolean) {
     }
 }
 
-/** 副标题：安装包给版本，模块给模块版本 + 作者，读不出来的给原因。 */
+/** 副标题：安装包给版本，读不出来的给原因。 */
 private fun itemDetail(item: BatchItem): String? {
-    item.module?.let { module ->
-        return listOf(tr("模块", "Module"), module.version, module.author)
-            .filter { it.isNotBlank() }
-            .joinToString(" · ")
-    }
     item.apk?.let { info ->
         val kind = when {
             info.splits.isNotEmpty() -> tr("拆分包", "Split bundle")

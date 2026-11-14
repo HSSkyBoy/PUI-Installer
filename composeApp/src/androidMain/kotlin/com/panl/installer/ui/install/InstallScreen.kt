@@ -134,20 +134,7 @@ fun InstallScreen(controller: InstallController, onClose: () -> Unit) {
             androidx.compose.animation.AnimatedContent(
                 modifier = Modifier.adaptiveWidth(InstallContentMaxWidth).fillMaxHeight(),
                 targetState = state,
-                contentKey = { st ->
-                    // 模块刷入的「确认 / 刷入中 / 成功 / 失败」是同一个类，
-                    // 用类当 key 的话状态切换不会播动画，这里按阶段拆开
-                    if (st is InstallUiState.ModuleConfirm) {
-                        when {
-                            st.flashing -> "module-flashing"
-                            st.output != null && st.failed -> "module-failed"
-                            st.output != null -> "module-done"
-                            else -> "module-confirm"
-                        }
-                    } else {
-                        st::class
-                    }
-                },
+                contentKey = { it::class },
                 transitionSpec = {
                     (
                         androidx.compose.animation.fadeIn(
@@ -168,16 +155,6 @@ fun InstallScreen(controller: InstallController, onClose: () -> Unit) {
                 label = "install-state"
             ) { st ->
                 when (st) {
-                    // 模块刷入：和浮窗共用同一份内容，外面套个居中容器
-                    is InstallUiState.ModuleConfirm -> Column(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp, vertical = 24.dp),
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        ModuleSheet(st, controller, onClose)
-                    }
-
                     is InstallUiState.Loading -> SimpleStateBody(
                         title = tr("准备中", "Preparing"),
                         message = tr("正在读取安装包…", "Reading the APK…"),

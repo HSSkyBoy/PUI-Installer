@@ -71,15 +71,6 @@ sealed interface InstallUiState {
     ) : InstallUiState
     data class Failed(val info: ApkInfo?, val message: String) : InstallUiState
 
-    /** 选到的是模块 zip：确认后交给 root 刷入。 */
-    data class ModuleConfirm(
-        val module: com.panl.installer.core.ModuleInfo,
-        val rootMode: com.panl.installer.core.ModuleInstaller.RootMode,
-        val flashing: Boolean = false,
-        val output: String? = null,
-        val failed: Boolean = false
-    ) : InstallUiState
-
     /** 系统把别的应用创建的安装会话丢过来确认。 */
     data class SessionConfirm(
         val sessionId: Int,
@@ -110,7 +101,7 @@ enum class BatchPhase { Preparing, Ready, Running, Done }
 
 enum class BatchStatus { Pending, Running, Done, Failed, Skipped }
 
-enum class BatchKind { Apk, Module, Unknown }
+enum class BatchKind { Apk, Unknown }
 
 /** 批量列表里的一项。 */
 data class BatchItem(
@@ -118,7 +109,6 @@ data class BatchItem(
     val name: String,
     val kind: BatchKind,
     val apk: ApkInfo? = null,
-    val module: com.panl.installer.core.ModuleInfo? = null,
     val status: BatchStatus = BatchStatus.Pending,
     /** 失败原因 / 跳过原因，成功时为 null。 */
     val note: String? = null
@@ -387,15 +377,6 @@ class InstallController(
             }
             val file = result.file
             safeRetryDone = false
-            // 模块 zip：里面是 module.prop 而不是 APK，走模块刷入这条状态
-            if (settings.moduleFlashEnabled) {
-                val module = withContext(Dispatchers.IO) { com.panl.installer.core.ModuleInspector.inspect(file) }
-                if (module != null) {
-                    val mode = withContext(Dispatchers.IO) { com.panl.installer.core.ModuleInstaller.detect() }
-                    state = InstallUiState.ModuleConfirm(module, mode)
-                    return@launch
-                }
-            }
             // 拆分包（.apks/.xapk/.apkm）：先解包，拿 base.apk 去解析，其余分片挂在 info 上
             val bundle = withContext(Dispatchers.IO) {
                 if (BundleReader.isBundle(file.name)) BundleReader.extract(activity, file) else null
@@ -460,25 +441,6 @@ class InstallController(
         sourceUri = uri
         InstallEngine.Bus.outcome = null
         load(uri)
-    }
-
-    /** 刷入当前模块。 */
-    fun flashModule() {
-        val st = state as? InstallUiState.ModuleConfirm ?: return
-        if (st.flashing) return
-        state = st.copy(flashing = true, output = null, failed = false)
-        activity.lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                com.panl.installer.core.ModuleInstaller.install(
-                    st.module.file, st.rootMode, st.module.id
-                )
-            }
-            com.panl.installer.core.InstallerLog.record(
-                activity, "MODULE",
-                "刷入 ${st.module.id} -> ${if (result.ok) "成功" else "失败"}"
-            )
-            state = st.copy(flashing = false, output = result.output, failed = !result.ok)
-        }
     }
 
     fun startInstall() {
@@ -955,11 +917,6 @@ class InstallController(
         // 只有复制到缓存的那份才由我们删
         if (staged.copied) batchStaged += file
 
-        if (settings.moduleFlashEnabled) {
-            val module = withContext(Dispatchers.IO) { com.panl.installer.core.ModuleInspector.inspect(file) }
-            if (module != null) return BatchItem(uri, name, BatchKind.Module, module = module)
-        }
-
         val bundle = withContext(Dispatchers.IO) {
             if (BundleReader.isBundle(file.name)) BundleReader.extract(activity, file) else null
         }
@@ -994,11 +951,6 @@ class InstallController(
                 }
             }
             val items = st.items.toMutableList()
-            val rootMode = if (items.any { it.kind == BatchKind.Module }) {
-                withContext(Dispatchers.IO) { com.panl.installer.core.ModuleInstaller.detect() }
-            } else {
-                com.panl.installer.core.ModuleInstaller.RootMode.None
-            }
 
             for (i in items.indices) {
                 if (batchStopped) break
@@ -1010,7 +962,7 @@ class InstallController(
                 }
                 items[i] = item.copy(status = BatchStatus.Running, note = null)
                 state = InstallUiState.Batch(items.toList(), BatchPhase.Running)
-                val (ok, note) = installOne(items[i], rootMode)
+                val (ok, note) = installOne(items[i])
                 items[i] = items[i].copy(
                     status = if (ok) BatchStatus.Done else BatchStatus.Failed,
                     note = note
@@ -1029,19 +981,9 @@ class InstallController(
         batchStopped = true
     }
 
-    private suspend fun installOne(item: BatchItem, rootMode: com.panl.installer.core.ModuleInstaller.RootMode): Pair<Boolean, String?> =
+    private suspend fun installOne(item: BatchItem): Pair<Boolean, String?> =
         when (item.kind) {
-            BatchKind.Module -> {
-                val module = item.module ?: return false to tr("模块信息丢失", "Module info lost")
-                val r = withContext(Dispatchers.IO) {
-                    com.panl.installer.core.ModuleInstaller.install(module.file, rootMode, module.id)
-                }
-                InstallerLog.record(activity, "BATCH", "模块 ${module.id} -> ${r.ok}")
-                r.ok to (if (r.ok) null else r.output.take(160).ifBlank { tr("刷入失败", "Flash failed") })
-            }
-
             BatchKind.Apk -> installApkOf(item)
-
             BatchKind.Unknown -> false to item.note
         }
 
