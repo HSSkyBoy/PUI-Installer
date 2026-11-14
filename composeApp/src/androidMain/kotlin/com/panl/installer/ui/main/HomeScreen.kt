@@ -67,26 +67,12 @@ fun HomeScreen(
     val density = LocalDensity.current.density
 
     // 多选：只挑一个时走原来的单装页，挑多个才进批量列表
-    val installPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        if (!uris.isNullOrEmpty()) {
-            val intent = Intent(context, InstallActivity::class.java)
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            if (uris.size == 1) {
-                intent.setData(uris.first())
-            } else {
-                intent.action = Intent.ACTION_SEND_MULTIPLE
-                intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-            }
-            context.startActivity(intent)
-        }
-    }
-    val signPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    val installPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            context.startActivity(
-                Intent(context, SignatureActivity::class.java)
-                    .setData(uri)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            )
+            val intent = Intent(context, InstallActivity::class.java)
+                .setData(uri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            context.startActivity(intent)
         }
     }
 
@@ -154,24 +140,15 @@ fun HomeScreen(
 
         item {
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ActionTile(
-                    iconRes = R.drawable.ic_folder_open,
-                    title = tr("选择安装包", "Choose APK"),
-                    subtitle = tr("可多选，批量安装", "Pick one or more, install in batch"),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // 放开所有文件：.apk.1 和 .apks/.xapk/.apkm 的 mime 都是未知的，
-                    // 只按 apk 的 mime 过滤会在选择器里看不到它们
-                    installPicker.launch(arrayOf(APK_MIME, "*/*"))
-                }
-
-                ActionTile(
-                    iconRes = R.drawable.ic_check,
-                    title = tr("签名检测", "Signature check"),
-                    subtitle = tr("看看谁签的名", "See who signed it"),
-                    modifier = Modifier.weight(1f)
-                ) { signPicker.launch(arrayOf(APK_MIME)) }
+            ActionTile(
+                iconRes = R.drawable.ic_folder_open,
+                title = tr("选择安装包", "Choose APK"),
+                subtitle = tr("选择单个安装包安装", "Pick an APK to install"),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 放开所有文件：.apk.1 和 .apks/.xapk/.apkm 的 mime 都是未知的，
+                // 只按 apk 的 mime 过滤会在选择器里看不到它们
+                installPicker.launch(arrayOf(APK_MIME, "*/*"))
             }
         }
 
