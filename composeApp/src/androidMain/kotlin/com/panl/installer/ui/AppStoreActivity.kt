@@ -110,10 +110,9 @@ private fun AppStoreScreen(onClose: () -> Unit) {
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = blurH + 4.dp, bottom = 32.dp)
         ) {
                 item {
-                    PuiPageTitle(tr("注册应用商店", "Register app store"))
+                    PuiPageTitle(tr("权限与能力检测", "Permissions & Capabilities"))
                     Text(
-                        tr("Android 17 QPR2 起，通过 Google 审核的第三方商店可以获得「一键安装」：", "Starting with Android 17 QPR2, third-party stores approved by Google can offer one-tap installs: ") +
-                            tr("用户点安装即装，不再逐次弹出系统确认。", "users tap Install and it installs, with no system confirmation each time."),
+                        tr("检测当前系统环境、安装器声明的权限与系统特性支持情况。", "Check the current system environment, declared permissions, and feature support."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 4.dp, bottom = 14.dp)
@@ -124,9 +123,9 @@ private fun AppStoreScreen(onClose: () -> Unit) {
                     PuiNoticeCard(
                         title = tr("自检通过 $passed / ${checks.size} 项", "$passed / ${checks.size} checks passed"),
                         text = if (passed == checks.size) {
-                            tr("代码侧需要的声明都已就位。是否被系统识别为注册商店，取决于 Google 审核与所在地区。", "Everything needed on the code side is in place. Whether the system treats you as a registered store depends on Google's review and your region.")
+                            tr("代码与系统层所需能力均已就位。", "All code and system-level capabilities are in place.")
                         } else {
-                            tr("还有未满足的项，详见下方清单。", "Some requirements are still unmet — see the list below.")
+                            tr("部分能力或权限未满足，详见下方清单。", "Some capabilities or permissions are unmet — see the list below.")
                         },
                         icon = if (passed == checks.size) PuiIcon.Check else PuiIcon.Info,
                         tone = if (passed == checks.size) PuiNoticeTone.Success else PuiNoticeTone.Info
@@ -167,33 +166,6 @@ private fun AppStoreScreen(onClose: () -> Unit) {
                             )
                         }
                     }
-                }
-
-                item {
-                    Spacer(Modifier.height(18.dp))
-                    SectionTitle(tr("注册流程", "Registration flow"))
-                }
-                item {
-                    PuiCard {
-                        Column(Modifier.padding(16.dp)) {
-                            StepRow("1", tr("提交意向表", "Submit the interest form"), tr("提供组织信息、公开分发链接与开发者账号", "Provide organization info, a public distribution link and a developer account"))
-                            StepRow("2", tr("资格预审", "Eligibility review"), tr("校验组织账号、开发者与包名归属、品牌真实性", "Verify the organization account, developer and package ownership, and brand authenticity"))
-                            StepRow("3", tr("缴纳年费", "Pay the annual fee"), tr("固定年费，用于启动资格审核", "A flat annual fee that starts eligibility review"))
-                            StepRow("4", tr("技术与安全评估", "Technical and security review"), tr("上传 APK 做恶意软件扫描、提交完整应用目录、提供政策链接", "Upload the APK for malware scanning, submit a full app catalog and provide policy links"))
-                            StepRow("5", tr("激活", "Activation"), tr("审核通过后状态变为 Registered App Store，一键安装生效", "Once approved, your status becomes Registered App Store and one-tap installs work"), last = true)
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        tr("说明：注册商店是 Google 的运营计划，需要企业资质、年费与持续合规（MASA 认证、目录上报等）。", "Note: registered stores are a Google program that needs a company, an annual fee and ongoing compliance (MASA certification, catalog reporting and more).") +
-                            tr("本页只覆盖代码与清单侧的要求。", "This page only covers the code and manifest requirements."),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
                 }
             }
 
@@ -273,39 +245,6 @@ private fun PermissionRow(name: String, detail: String, showDivider: Boolean) {
     }
 }
 
-@Composable
-private fun StepRow(index: String, title: String, detail: String, last: Boolean = false) {
-    Row(Modifier.padding(bottom = if (last) 0.dp else 14.dp)) {
-        Box(
-            Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                index,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
 // ---------------- 自检逻辑 ----------------
 
 private fun buildChecks(context: Context): List<CheckItem> {
@@ -371,11 +310,6 @@ private fun buildChecks(context: Context): List<CheckItem> {
             tr("targetSdk 达到 N-1", "targetSdk is at least N-1"),
             tr("当前 targetSdk $targetSdk，设备 API ${Build.VERSION.SDK_INT}", "Current targetSdk $targetSdk, device API ${Build.VERSION.SDK_INT}"),
             targetSdk >= Build.VERSION.SDK_INT - 1
-        ),
-        CheckItem(
-            tr("自更新能力", "Self-update"),
-            tr("尚未接入更新通道（需要商店服务端）", "No update channel yet (needs a store backend)"),
-            false
         )
     )
 }

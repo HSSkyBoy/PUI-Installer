@@ -276,8 +276,8 @@ fun SettingsScreen(topPad: Dp) {
                 PuiListRow(
                     icon = null,
                     iconPainter = painterResource(R.drawable.ic_play),
-                    title = tr("应用商店能力", "App store capabilities"),
-                    subtitle = tr("RAS 要求与自检", "RAS requirements and checks"),
+                    title = tr("权限与能力检测", "Permissions & Capabilities"),
+                    subtitle = tr("系统环境与权限支持情况", "System environment & permissions"),
                     showDivider = true,
                     showChevron = true,
                     onClick = { context.startActivity(Intent(context, AppStoreActivity::class.java)) }
